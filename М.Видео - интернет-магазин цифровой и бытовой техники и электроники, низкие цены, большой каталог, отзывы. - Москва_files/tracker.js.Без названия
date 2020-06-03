@@ -1,0 +1,455 @@
+(function(d, w, nav, sc) {
+  function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+  }
+
+  function serialize(obj) {
+    return Object.keys(obj)
+      .map(function(key) {
+        return [key, obj[key]].join('=');
+      })
+      .join('&');
+  }
+
+  function getCookie(name) {
+    var matches = d.cookie.match(new RegExp('(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+    return matches ? decodeURIComponent(matches[1]) : '';
+  }
+
+  function getIPs() {
+    if (w.Promise) {
+      return new Promise((resolve, reject) => {
+        var ip_dups = {};
+
+        //compatibility for firefox and chrome
+        var RTCPeerConnection =
+          window.RTCPeerConnection ||
+          window.mozRTCPeerConnection ||
+          window.webkitRTCPeerConnection;
+        if (RTCPeerConnection) {
+          var mediaConstraints = {
+            optional: [{ RtpDataChannels: true }]
+          };
+          var servers = undefined;
+          if (window.webkitRTCPeerConnection)
+            servers = {
+              iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+              sdpSemantics: "plan-b"
+            };
+          var pc = new RTCPeerConnection(servers, mediaConstraints);
+
+          pc.onicecandidate = function(ice) {
+            if (ice.candidate) {
+              var ip_regex = /([0-9]{1,3}(\.[0-9]{1,3}){3})/;
+              var ip_addr = ip_regex.exec(ice.candidate.candidate)[1];
+              if (ip_dups[ip_addr] === undefined) resolve(ip_addr);
+              ip_dups[ip_addr] = true;
+            }
+          };
+
+          pc.createDataChannel("");
+          pc.createOffer(
+            function(result) {
+              pc.setLocalDescription(result, function() {}, function() {});
+            },
+            function() {}
+          );
+        } else {
+          resolve("");
+        }
+        resolve("");
+      });
+    }
+  }
+
+  function getBattery() {
+    return nav.getBattery && typeof nav.getBattery === 'function'
+      ? nav.getBattery(function(battery) {
+          var result = {};
+          if (battery.charging) result.charging = 1;
+          result.batLevel = Math.floor(battery.level * 100);
+          return result;
+        })
+      : w.Promise.resolve();
+  }
+
+  function avInputs() {
+    return nav.mediaDevices && typeof nav.mediaDevices.enumerateDevices === 'function'
+      ? nav.mediaDevices
+          .enumerateDevices()
+          .then(function(resEnum) {
+            var result = {};
+            var videoInputs = 0;
+            var audioInputs = 0;
+            resEnum.forEach(function(elem) {
+              if (elem.kind == 'videoinput') videoInputs++;
+              if (elem.kind == 'audioinput') audioInputs++;
+            });
+            result['videoInputs'] = videoInputs;
+            result['audioInputs'] = audioInputs;
+            return result;
+          })
+          .catch(err => {})
+      : w.Promise.resolve();
+  }
+
+  function isCanvasSupported() {
+    var elem = document.createElement('canvas');
+    return !!(elem.getContext && elem.getContext('2d'));
+  }
+
+  function getExt(callback) {
+    try {
+      var ext = {};
+      if (nav.plugins) ext.pLen = nav.plugins.length;
+      if (nav.languages) ext.lngs = nav.languages;
+      if (nav.platform) ext.p = nav.platform;
+      if (nav.maxTouchPoints) ext.tp = nav.maxTouchPoints;
+      if (nav.hardwareConcurrency) ext.hc = nav.hardwareConcurrency;
+      if (w.history) ext.hl = w.history.length;
+      ext.dc = w.chrome ? 1 : 0;
+      ext.do = w.opera ? 1 : 0;
+      ext.df = w.mozInnerScreenX ? 1 : 0;
+      ext.o = w.orientation || 0;
+      ext.m = 'ontouchstart' in d.documentElement ? 1 : 0;
+      ext.tz = parseInt(new Date().getTimezoneOffset() / 60 + '');
+
+      if (isCanvasSupported()) {
+        var canvas = d.createElement('canvas');
+        var gl = canvas.getContext('webgl') || canvas.getContext('webgl-experimental');
+        if (gl) {
+          var debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            ext.wGLVen = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+            ext.wGLRen = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+          }
+        }
+      }
+
+      if (nav.bluetooth) ext.blth = 1;
+
+      if (w.Promise) {
+        var tasks = [];
+        tasks.push(getBattery());
+        tasks.push(getIPs());
+        tasks.push(avInputs());
+
+        w.Promise.all(tasks)
+          .then(function(arParams) {
+            var battery = arParams[0];
+            var ip = arParams[1];
+            var avInputs = arParams[2];
+            if (battery) {
+              if (battery.charging) ext.charging = battery.charging;
+              if (battery.batLevel) ext.batLevel = battery.batLevel;
+            }
+            if (ip) ext.ip = ip;
+            if (avInputs) {
+              ext.vIns = avInputs.videoInputs;
+              ext.aIns = avInputs.audioInputs;
+            }
+            callback(null, ext);
+          })
+          .catch(function(err) {
+            callback(err);
+          });
+      } else {
+        callback(null, ext);
+      }
+    } catch (err) {
+      callback(err);
+    }
+  }
+
+  var Base64 = {
+    _keyStr: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=',
+    encode: function(e) {
+      var t = '';
+      var n, r, i, s, o, u, a;
+      var f = 0;
+      e = Base64._utf8_encode(e);
+      while (f < e.length) {
+        n = e.charCodeAt(f++);
+        r = e.charCodeAt(f++);
+        i = e.charCodeAt(f++);
+        s = n >> 2;
+        o = ((n & 3) << 4) | (r >> 4);
+        u = ((r & 15) << 2) | (i >> 6);
+        a = i & 63;
+        if (isNaN(r)) {
+          u = a = 64;
+        } else if (isNaN(i)) {
+          a = 64;
+        }
+        t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a);
+      }
+      return t;
+    },
+    _utf8_encode: function(e) {
+      e = e.replace(/rn/g, 'n');
+      var t = '';
+      for (var n = 0; n < e.length; n++) {
+        var r = e.charCodeAt(n);
+        if (r < 128) {
+          t += String.fromCharCode(r);
+        } else if (r > 127 && r < 2048) {
+          t += String.fromCharCode((r >> 6) | 192);
+          t += String.fromCharCode((r & 63) | 128);
+        } else {
+          t += String.fromCharCode((r >> 12) | 224);
+          t += String.fromCharCode(((r >> 6) & 63) | 128);
+          t += String.fromCharCode((r & 63) | 128);
+        }
+      }
+      return t;
+    }
+  };
+
+  function hit(referrer) {
+    var s = w && w.sessionStorage ? w.sessionStorage : {};
+    var query = {
+      rnd: Math.random().toString(),
+      u: encodeURIComponent(d.URL),
+      r: encodeURIComponent(referrer || d.referrer)
+    };
+
+    try {
+      var e = d.documentElement;
+      query.v = 4;
+      query.w = w.top === w ? 1 : 0;
+      query.h = d.hidden ? 1 : 0;
+      query.gW = Math.max(e.clientWidth, w.innerWidth || 0);
+      query.gH = Math.max(e.clientHeight, w.innerHeight || 0);
+      query.gDH = Math.max(d.body.scrollHeight, e.scrollHeight, d.body.offsetHeight, e.offsetHeight, d.body.clientHeight, e.clientHeight);
+      query.gDW = Math.max(d.body.scrollWidth, e.scrollWidth, d.body.offsetWidth, e.offsetWidth, d.body.clientWidth, e.clientWidth);
+      query.sW = sc.width || 0;
+      query.sH = sc.height || 0;
+      query.daw = sc.availWidth || 0;
+      query.dah = sc.availHeight || 0;
+      query.ga = getCookie('_ga');
+      query.dpr = w.devicePixelRatio || '';
+      query.c = (function() {
+        var conn = '';
+        if (nav && nav.connection) {
+          if (nav.connection.type) conn = nav.connection.type;
+          else if (nav.connection.effectiveType) conn = 'eff:' + nav.connection.effectiveType;
+        }
+        return conn;
+      })();
+      query.t = s && s._tid ? s._tid : (s._tid = Date.now());
+
+      if (w.performance) {
+        if (w.performance.navigation) {
+          query.rc = w.performance.navigation.redirectCount;
+          query.tn = w.performance.navigation.type;
+        }
+
+        if (w.performance.timing)
+          query.dc = (w.performance.timing.secureConnectionStart || w.performance.timing.fetchStart) - w.performance.timing.fetchStart;
+      }
+    } catch (e) {}
+
+    var utmSource = getUrlParameter('utm_source').toLowerCase();
+
+    var sourceForExt = [
+      'otm_network',
+
+      'gpmd',
+      'ipr_mt',
+      'between',
+
+      'yandex_video',
+      'overclockers',
+      'unilever_rus',
+      'imho_video',
+      'mail_video',
+      'buzzoola',
+      'mytarget',
+      'imho',
+      'otm_video',
+      'sts_video',
+      'gpmd_desktop',
+      'gpmd_video',
+
+      'buzzoola_desktop',
+      'beautycontext',
+      'pepsico',
+      'cpd_oap_hydragenius_loreal-paris-landingpage',
+      'ctc',
+      'sts',
+      'megogo',
+      'mail_cards',
+      'mail_price',
+      'flocktory',
+      'mail_gifts',
+      'mob-mytarget',
+      'jnj-ozon',
+      'alice_landing',
+      'polv_imho',
+      'polv'
+    ];
+
+    var path = '//statad.ru/pixel.gif';
+    if (~sourceForExt.indexOf(utmSource)) {
+      getExt(function(err, ext) {
+        if (err) {
+          ext = { err: err.message || err };
+        }
+        ext = Base64.encode(JSON.stringify(ext));
+
+        query.ext = ext
+          .split('')
+          .reverse()
+          .join('');
+        var qs = serialize(query);
+        new Image().src = [path, '?', qs].join('');
+      });
+    } else {
+      var qs = serialize(query);
+      new Image().src = [path, '?', qs].join('');
+    }
+  }
+
+  hit();
+
+  var url = w.location.href;
+  var count = 0;
+  var checkInterval = setInterval(function() {
+    if (count >= 50) clearInterval(checkInterval);
+    else if (url !== w.location.href) {
+      hit(url);
+      url = w.location.href;
+      count++;
+    }
+  }, 1000);
+})(document, window, navigator, screen);
+
+// Conversion code
+(function(w, d) {
+  function getCookie(name) {
+    var matches = d.cookie.match(
+      new RegExp(
+        "(?:^|; )" +
+          name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, "\\$1") +
+          "=([^;]*)"
+      )
+    );
+    return matches ? decodeURIComponent(matches[1]) : undefined;
+  }
+
+  function serialize(obj) {
+    return Object.keys(obj)
+      .map(function(key) {
+        return [key, obj[key]].join("=");
+      })
+      .join("&");
+  }
+
+  function checkOrders(result) {
+    var sentOrdersKey = "orders_8de0fa74f95";
+    var txid = result.txid;
+    var resArr = [];
+    var res = true;
+    var storage = JSON.parse(w.localStorage.getItem(sentOrdersKey));
+    if (storage) {
+      if (storage.length > 50) {
+        storage.shift();
+      }
+      resArr = storage;
+      if (~storage.indexOf(txid)) {
+        res = false;
+      } else {
+        resArr.push(txid);
+      }
+    } else {
+      resArr.push(txid);
+    }
+
+    w.localStorage.setItem(sentOrdersKey, JSON.stringify(resArr));
+    return res;
+  }
+
+  function sendOrders(result) {
+    var time = Date.now();
+    result.products.forEach(product => {
+      for (var i = 0; i < product.quantity; i++) {
+        var query = serialize({
+          rnd: Math.random().toString(),
+          url: encodeURIComponent(d.URL),
+          prev: product.price || 0,
+          txid: result.txid,
+          euid: getUid(),
+          cat: encodeURIComponent(product.category || "unknown")
+        });
+        new Image().src = ["//statad.ru/order.gif", "?", query].join("");
+      }
+    });
+  }
+
+  function getUid() {
+    var uid = (getCookie("_ga") || "unknown")
+      .split(".")
+      .splice(2, 4)
+      .join(".");
+    return uid || "unknown";
+  }
+
+  function getProducts() {
+    var products = null;
+    var txid = null;
+    if (w.dataLayer) {
+      var layers = w.dataLayer.filter(function(item) {
+        return item.event === "transaction";
+      });
+      if (layers.length && layers[0].transactionProducts) {
+        txid = layers[0].transactionId;
+        products = layers[0].transactionProducts;
+      }
+    }
+    return { products: products, txid: txid };
+  }
+
+  try {
+    if (w.location.pathname === "/confirmation") {
+      var result = getProducts();
+      if (result.products && checkOrders(result)) sendOrders(result);
+      else {
+        var repeats = 0;
+        var interval = setInterval(() => {
+          repeats++;
+          result = getProducts();
+          if (result.products && checkOrders(result)) {
+            clearInterval(interval);
+            sendOrders(result);
+          } else if (repeats > 5) {
+            clearInterval(interval);
+          }
+        }, 1000);
+      }
+    }
+  } catch (e) {}
+})(window, document);
+
+
+/*
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v4.5.5
+Comment: https://openpgpjs.org
+
+wsDcBAEBCgAGBQJe1iskAAoJEOOmc3IHnZzJG3sL/Rtg4V4LEyz+1AHiAccE
+4Q1BCkoQxDoMUYAzfhSnGyCKdMjR4KI57Of1U2wFu4YQBrUPjYsN3wSTR8RN
+KLvSs84GBKH5B50zbeNvPsUZ7IJrF/KTV5wsDpl7vtpDaST1q8QaMbHNOLv8
+kyFYL3ykHJlyWmu/1AzH/psDqfSPbqzSQVwIP/c2DtoV0NR2wZt0K10t9P/7
+lCt8Y5KGI2wlmvCFVVMdn5Ed/2ephCtMUt66Zs7hhIWd+3G0bK0V+iruzehx
+diTrdTW/0zg7k3ZD0PLI1RMqvfKt//SRzE7WjmmrBf1sfPgJ7jgU+n9+uYcU
+VuYa75qKR8MDKLPHT96PHv/mTqUaomJLomAPqCPS7qBw7mNTt14vByjYD5Wu
+pt/I/dZdgtxNR7Bzy1dOUPO0XbGCK1bxa7G8M/RmguaXjQkpywI72bSqhG6A
+j0ScG8uGAdhtdREF6aBpKMCYlc8BkMfeSbBSyQABD90HZvedGYKn8yWZs5uj
+jF6Rl2+3xO/Kdg==
+=3hv8
+-----END PGP SIGNATURE-----
+
+*/
