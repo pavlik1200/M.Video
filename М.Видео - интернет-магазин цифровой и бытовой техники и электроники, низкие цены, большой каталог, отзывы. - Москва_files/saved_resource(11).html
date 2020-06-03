@@ -1,0 +1,82 @@
+
+<!-- saved from url=(0022)https://www.mvideo.ru/ -->
+<html lang="ru" style="transform: translateZ(0px) scale(1, 1);"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script>window.widget = {};window.widget.ready = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'ready', arguments);
+    };
+window.widget.track = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'track', arguments);
+    };
+window.widget.show = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'show', arguments);
+    };
+window.widget.hide = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'hide', arguments);
+    };
+window.widget.configure = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'configure', arguments);
+    };
+window.widget.setScreen = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'setScreen', arguments);
+    };
+window.widget.pushStatus = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'pushStatus', arguments);
+    };
+window.widget.pushSubscribe = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'pushSubscribe', arguments);
+    };
+window.widget.getData = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getData', arguments);
+    };
+window.widget.getMotivation = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getMotivation', arguments);
+    };
+window.widget.setValue = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'setValue', arguments);
+    };
+window.widget.getValue = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getValue', arguments);
+    };
+window.widget.getMeta = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getMeta', arguments);
+    };
+window.widget.collectEmail = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'collectEmail', arguments);
+    };
+window.widget.sendError = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'sendError', arguments);
+    };Object.freeze(window.widget);</script>
+
+  <title>WC-9732</title>
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<script>
+  var TARGET_TEXT = 'Товар дня!';
+  var productElements = [].slice.call(parent.document.querySelectorAll('.gallery-list-item'));
+  var checkTargetItem = function (list, text) {
+    return list.some(function (item) {
+      return parent.getComputedStyle(item).display !== 'none' && item.textContent && item.textContent.trim() === text;
+    });
+  };
+
+  if (productElements.length) {
+    productElements.forEach(function (element) {
+      var productBadges = [].slice.call(element.querySelectorAll('[data-init="sg-tooltip"]'));
+
+      if (checkTargetItem(productBadges, TARGET_TEXT)) {
+        productBadges.forEach(function (item) {
+          if (item.textContent.trim() !== TARGET_TEXT) {
+            item.style.display = 'none';
+          }
+        });
+      }
+    });
+
+    widget.track('show-widget');
+  }
+</script>
+
+
+</body></html>

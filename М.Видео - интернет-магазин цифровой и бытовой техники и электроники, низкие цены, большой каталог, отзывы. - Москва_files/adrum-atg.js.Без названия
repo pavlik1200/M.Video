@@ -1,0 +1,169 @@
+;/* Version 1.0.3
+ ADRUM initialization script for M.video 
+ akmal[dot]khodjanov[at]appdynamics[dot]com
+*/
+(function(config) {
+
+    function getCookieByName(cookieName, cookieValue) {
+        var cookieValue = '';
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.indexOf(cookieName + '=') === 0) {
+                cookieValue = cookie.substring(cookieName.length + 1);
+                break;
+            }
+        }
+        return cookieValue;
+    }
+
+    function adrumCollect() {
+        try {
+            let data = {
+                userData: {
+                    pageType : '', 
+                    cityName : '', 
+                    userName : '', 
+                    storeName : '', 
+                    userEmail : '', 
+                    productCategoryName : '', 
+                    productGroupName : '', 
+                    productName : '', 
+                    productTag : '', 
+                    _ga : '', 
+                    _gid : '',
+                    userAgent : ''
+                },
+                userDataDouble: {
+                    bonusAmount : 0.0, 
+                    cartAmount : 0.0, 
+                    productPriceLocal : 0.0,
+                },
+                userDataLong: {
+                    cityId : 0, 
+                    isDigital : 0, 
+                    pageNumber : 0, 
+                    storeId : 0, 
+                    userAuth : 0, 
+                    userOrders : 0, 
+                    user_crm_id : 0, 
+                    pageServer : 0, 
+                    productId : 0, 
+                    pickupLeadTime : -1, 
+                    deliveryLeadTime : -1,
+                    labelCount : 0,
+                },
+                userDataBoolean: {
+                    productAvailability : false,
+                },
+            }
+            if (typeof dataLayer !== 'undefined' && dataLayer.length > 1) {
+                data.userData.pageType = dataLayer[0].pageType || '';
+                data.userData.cityName = dataLayer[0].cityName || '';
+                data.userData.userName = dataLayer[0].userName || '';
+                data.userData.storeName = dataLayer[0].storeName || '';
+                data.userData.userEmail = dataLayer[0].userEmail || '';
+                data.userData.productCategoryName = dataLayer[0].productCategoryName || '';
+                data.userData.productGroupName = dataLayer[0].productGroupName || '';
+                data.userData.productName = dataLayer[0].productName || '';
+                data.userData.productTag = dataLayer[0].productTag || '';
+                data.userDataDouble.bonusAmount = parseFloat(dataLayer[0].bonusAmount) || 0.0;
+                data.userDataDouble.cartAmount = parseFloat(dataLayer[0].cartAmount) || 0.0;
+                data.userDataDouble.productPriceLocal = parseFloat(dataLayer[0].productPriceLocal) || 0.0;
+                data.userDataLong.cityId = parseInt(dataLayer[0].cityId) || 0;
+                data.userDataLong.isDigital = parseInt(dataLayer[0].isDigital) || 0;
+                data.userDataLong.pageNumber = parseInt(dataLayer[0].pageNumber) || 0;
+                data.userDataLong.storeId = parseInt(dataLayer[0].storeId) || 0;
+                data.userDataLong.userAuth = parseInt(dataLayer[0].userAuth) || 0;
+                data.userDataLong.userOrders = parseInt(dataLayer[0].userOrders) || 0;
+                data.userDataLong.user_crm_id = parseInt(dataLayer[0].user_crm_id) || 0;
+                data.userDataLong.pageServer = parseInt(dataLayer[0].pageServer) || 0;
+                data.userDataLong.productId = parseInt(dataLayer[0].productId) || 0;
+                if(typeof dataLayer[0].productAvailability !== 'undefined') {
+                    data.userDataBoolean.productAvailability = dataLayer[0].productAvailability === 'available';
+                    if(data.userDataBoolean.productAvailability) {
+                        try {
+                            var pickupWhenStr = document.querySelector('.c-delivery.o-container__element.sel-pdp-delivery-shop').querySelector('.c-delivery__text').querySelector('.c-delivery__when').innerText;
+                            if(pickupWhenStr.indexOf('сегодня') > -1) {
+                                data.userDataLong.pickupLeadTime = 0;
+                            }
+                            else if(pickupWhenStr.indexOf('завтра') > -1) {
+                                data.userDataLong.pickupLeadTime = 1;
+                            }
+                            else {
+                                data.userDataLong.pickupLeadTime = 365; // more than two days
+                            }
+                        }
+                        catch(e) {
+                        }
+
+                        try {
+                            var deliveryWhenStr = document.querySelector('.c-delivery.o-container__element.sel-pdp-delivery-courier').querySelector('.c-delivery__text').querySelector('.c-delivery__when').innerText;
+                            if(deliveryWhenStr.indexOf('сегодня') > -1) {
+                                data.userDataLong.deliveryLeadTime = 0;
+                            }
+                            else if(deliveryWhenStr.indexOf('завтра') > -1) {
+                                data.userDataLong.deliveryLeadTime = 1;
+                            }
+                            else if(deliveryWhenStr.indexOf('послезавтра') > -1) {
+                                data.userDataLong.deliveryLeadTime = 2;
+                            }
+                            else {
+                            	data.userDataLong.deliveryLeadTime = 365; // more than three days
+                            }
+                        }
+                        catch(e) {
+                        }
+                    }                    
+                }
+            }
+            if((cookieValue = getCookieByName('_ga')) !== '') {
+                data.userData._ga = cookieValue;
+            }
+            if((cookieValue = getCookieByName('_gid', cookieValue)) !== '') {
+                data.userData._gid = cookieValue;
+            }
+            data.userData.userAgent = navigator.userAgent;
+            
+            try {
+                var MAX_LABELS = 6; // this must be under control
+                var labels = document.getElementsByClassName('o-pdp-topic__labels')[0].getElementsByClassName('o-pdp-topic__labels-item tooltipstered');
+                if(labels.length > 0) {
+                    data.userDataLong.labelCount = labels.length;
+                    for(var i = 0; i < labels.length && i < MAX_LABELS; i++) {
+                        data.userData['productLabel'+(i+1)] = labels[i].innerText.trim();
+                    }
+                }
+            }
+            catch(e){}
+
+            try {
+                if(window.location.pathname.startsWith('/products/')) {
+                    var titles = document.getElementsByClassName("c-notifications__title");
+                    for(var i = 0; i < titles.length; i++) {
+                        if(encodeURIComponent(titles[i].innerText) === "%D0%92%D0%B8%D1%82%D1%80%D0%B8%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BE%D0%B1%D1%80%D0%B0%D0%B7%D0%B5%D1%86") {
+                            data.userDataBoolean['floorSample'] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch(e){}
+
+            return data;
+        }
+        catch(e) {
+        }
+    }
+    config.appKey = 'EUM-AAB-AUM';
+    config.adrumExtUrlHttp = 'http://static.mvideo.ru/media/AppDynJsv2';
+    config.adrumExtUrlHttps = 'https://static.mvideo.ru/media/AppDynJsv2';
+    config.beaconUrlHttp = 'https://www.mvideo.ru/appdynv2';
+    config.beaconUrlHttps = 'https://www.mvideo.ru/appdynv2';
+    config.xd = {enable : true};
+    config.userEventInfo = {
+        PageView: function() {
+            return adrumCollect();
+        },
+    };
+})(window["adrum-config"] || (window["adrum-config"] = {}));

@@ -1,0 +1,73 @@
+
+<!-- saved from url=(0022)https://www.mvideo.ru/ -->
+<html lang="ru" style="transform: translateZ(0px) scale(1, 1);"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script>window.widget = {};window.widget.ready = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'ready', arguments);
+    };
+window.widget.track = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'track', arguments);
+    };
+window.widget.show = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'show', arguments);
+    };
+window.widget.hide = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'hide', arguments);
+    };
+window.widget.configure = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'configure', arguments);
+    };
+window.widget.setScreen = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'setScreen', arguments);
+    };
+window.widget.pushStatus = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'pushStatus', arguments);
+    };
+window.widget.pushSubscribe = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'pushSubscribe', arguments);
+    };
+window.widget.getData = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getData', arguments);
+    };
+window.widget.getMotivation = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getMotivation', arguments);
+    };
+window.widget.setValue = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'setValue', arguments);
+    };
+window.widget.getValue = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getValue', arguments);
+    };
+window.widget.getMeta = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'getMeta', arguments);
+    };
+window.widget.collectEmail = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'collectEmail', arguments);
+    };
+window.widget.sendError = function() {
+      return window.parent.flocktory.wapi(window.frameElement, 'sendError', arguments);
+    };Object.freeze(window.widget);</script>
+
+  <title>WC-9211</title>
+  
+  <meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<script type="text/javascript">
+  var ITEMS_IDS = ['30048151', '30048151', '30043039', '30043038', '30044981', '30047414', '30043039', '30043038', '30044981', '30047414', '30047033', '30047034', '30043201', '30043200', '30043654', '30043656', '30043655', '30046454', '30046455', '30043657', '30043659', '30043658', '30044264', '30044265', '30046602', '30045873', '50132801', '50131664', '50131665'];
+  var dataBlocks = parent.document.querySelectorAll('.i-flocktory');
+  var targetElement = parent.document.querySelector('.o-pay + .o-container__block .e-ul');
+  var itemId = [].reduce.call(dataBlocks, function (acc, item) {
+    if (item.dataset && item.dataset.flItemId) {
+      acc = item.dataset.flItemId;
+    }
+    return acc;
+  }, '');
+  
+  if (ITEMS_IDS.indexOf(itemId) !== -1 && targetElement) {
+    targetElement.style.display = 'none';
+    widget.track('show-widget');
+  }
+</script>
+
+
+</body></html>

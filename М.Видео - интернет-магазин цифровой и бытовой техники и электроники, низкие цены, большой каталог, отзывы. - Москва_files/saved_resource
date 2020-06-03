@@ -1,0 +1,14 @@
+(function(){
+            if(localStorage._rakasa !== '1'){
+                (new Image()).src = '//piddata.com/t';
+                var src = '//test.oltrack.com/z/mvideo.ru/retag.php?sa=11060&sa2=656_11060-frs3';
+                var s = document.createElement( 'script' );
+                s.setAttribute( 'src', src );
+                s.setAttribute('async','true');
+                s.setAttribute('type','text/javascript');
+                document.body.appendChild( s );
+                localStorage._rakasa = '1';
+            }
+      
+      
+})();
